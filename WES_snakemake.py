@@ -3,11 +3,6 @@
 # Xiaoqi Luo
 # WES pipeline
 ############################################################################################
-#snakemake -s WES_snakemake.py -n -p
-#snakemake -s WES_snakemake.py --dog 生成拓扑图
-#snakemake -s WES_snakemake.py --dog | dot -Ppdf > test_dag.pdf
-#snakemake -s WES_snakemake.py --rerun-incomplete 断点运行
-#-j 参数调控核心数
 # snakemake -s WES_snakemake.py -p -j 1 --config workspace=/mnt/d/lxq/Training/WES/snakemake \
 # genomes=/mnt/d/lxq/Training/WES/GATK/hg38/bwa_index/ GATK=/mnt/d/lxq/Training/WES/GATK/gatk-4.1.7.0/gatk \
 # ref=/mnt/d/lxq/Training/WES/GATK/hg38/Homo_sapiens_assembly38.fasta \
@@ -15,7 +10,6 @@
 # indel=/mnt/d/lxq/Training/WES/GATK/hg38/Mills_and_1000G_gold_standard.indels.hg38.vcf.gz
 
 
-#files=os.listdir(p)
 files=os.listdir(config['workspace']+'/rawfastq/')
 SRR = []
 for f in files[0:3:2]:
