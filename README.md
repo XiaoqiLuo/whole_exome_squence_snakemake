@@ -55,4 +55,4 @@ snp=/mnt/d/WES/GATK/hg38/dbsnp_146.hg38.vcf.gz \
 indel=/mnt/d/WES/GATK/hg38/Mills_and_1000G_gold_standard.indels.hg38.vcf.gz
 ```
 # result
-
+![image](https://github.com/XiaoqiLuo/whole_exome_squence_snakemake/blob/main/%E5%BE%AE%E4%BF%A1%E6%88%AA%E5%9B%BE_20210806201251.png)
