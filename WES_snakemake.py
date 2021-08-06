@@ -3,7 +3,7 @@
 # Xiaoqi Luo
 # WES pipeline
 ############################################################################################
-# snakemake -s WES_snakemake.py -p -j 1 --config workspace=/mnt/d/lxq/Training/WES/snakemake \
+# Terminal:
 # genomes=/mnt/d/lxq/Training/WES/GATK/hg38/bwa_index/ GATK=/mnt/d/lxq/Training/WES/GATK/gatk-4.1.7.0/gatk \
 # ref=/mnt/d/lxq/Training/WES/GATK/hg38/Homo_sapiens_assembly38.fasta \
 # snp=/mnt/d/lxq/Training/WES/GATK/hg38/dbsnp_146.hg38.vcf.gz \
