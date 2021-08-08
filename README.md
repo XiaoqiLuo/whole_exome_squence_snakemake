@@ -2,7 +2,7 @@
 
 ## Conda Enviornment
 ```
-conda install -c bioconda -c conda-forge bowtie sra-tools samtools bcftools vcftools snpeff multiqc qualimap fastp bowtie2 bwa bowtie bedtools snakemake
+conda install -c bioconda -c conda-forge bowtie sra-tools samtools bcftools vcftools snpeff fastp bowtie2 bwa bowtie bedtools snakemake
 ```
 
 ## GATK Download
