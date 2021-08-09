@@ -34,14 +34,16 @@ wget -c ftp://gsapubftp-anonymous@ftp.broadinstitute.org/bundle/hg38/Mills_and_1
 
 # How To Execute
 ## File Tree (fastq files are saved in rawfastq file)
->WES_snakemake.py<br>
->rawfastq
->>SRR13018671_1.fastq.gz<br>
->>SRR13018671_2.fastq.gz<br>
->>SRR10720394_1.fastq.gz<br>
->>SRR10720394_2.fastq.gz<br>
+>workspace
+>>WES_snakemake.py<br>
+>>rawfastq<br>
+>>>SRR13018671_1.fastq.gz<br>
+>>>SRR13018671_2.fastq.gz<br>
+>>>SRR10720394_1.fastq.gz<br>
+>>>SRR10720394_2.fastq.gz<br>
 
 ```
+snakemake -s WES_snakemake.py -p -j 1 --config workspace=path-to-workspace \
 genomes=path-to-bwa-index GATK=path-to-gatk \
 ref=path-to-Homo_sapiens_assembly38.fasta \
 snp=path-to-dbsnp_146.hg38.vcf.gz \
