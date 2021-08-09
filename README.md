@@ -57,6 +57,6 @@ snp=/mnt/d/WES/GATK/hg38/dbsnp_146.hg38.vcf.gz \
 indel=/mnt/d/WES/GATK/hg38/Mills_and_1000G_gold_standard.indels.hg38.vcf.gz
 ```
 # result
-The pipeline generates 20 files for one sample, which .vcf files is the result file needed for downstream analysis.<br>
+The pipeline generates 20 files for one sample, which ***.vcf*** files is the result file needed for downstream analysis.<br>
 File tree shown below:<br>
 ![image](https://github.com/XiaoqiLuo/whole_exome_squence_snakemake/blob/main/WES-workspace.png)
