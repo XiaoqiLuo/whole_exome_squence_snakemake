@@ -9,7 +9,7 @@ conda install -c bioconda -c conda-forge bowtie sra-tools samtools bcftools vcft
 ```
 wget  https://github.com/broadinstitute/gatk/releases/download/4.0.6.0/gatk-4.0.6.0.zip
 unzip gatk-4.0.6.0.zip
-cd /GATK/gatk-4.0.6.0
+cd gatk-4.0.6.0
 ./gatk --help
 ```
 
@@ -18,7 +18,7 @@ cd /GATK/gatk-4.0.6.0
 ```
 wget -c ftp://gsapubftp-anonymous@ftp.broadinstitute.org/bundle/hg38/Homo_sapiens_assembly38.fasta.gz  
 wget -c ftp://gsapubftp-anonymous@ftp.broadinstitute.org/bundle/hg38/Homo_sapiens_assembly38.fasta.fai  
-gunzip Homo_sapiens_assembly38.fasta.gz
+unzip Homo_sapiens_assembly38.fasta.gz
 ```
 
 ### dbsnp
