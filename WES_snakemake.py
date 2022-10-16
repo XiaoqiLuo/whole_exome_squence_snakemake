@@ -174,5 +174,5 @@ rule vqsr:
         '-R {params.ref} -V {input.raw} '
         '--tranches-file {input.tranches} '
         '--recal-file {input.table} '
-        '-O {output} --truth-sensitivity-filter-level 99.0'
+        '-O {output} --truth-sensitivity-filter-level 99.0 '
         '-mode SNP '
