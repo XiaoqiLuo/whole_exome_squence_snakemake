@@ -18,7 +18,7 @@ for f in files[0:3:2]:
 rule all:
     input:
         expand(
-            config['workspace'] + '/mapped/{sample}_raw.vcf',
+            config['workspace'] + '/mapped/{sample}_VQSR.vcf',
             sample=SRR
 		)
   
@@ -135,3 +135,44 @@ rule call:
         '{params.GATK} --java-options {params.extra} HaplotypeCaller '
         '-R {params.ref} --input {input} '
         '-O {output}'
+
+rule variantrecal:
+    output:
+        table=config['workspace'] + '/variant/{sample}.recal',
+        tranches=config['workspace'] + '/variant/{sample}.tranches',
+        rscript=config['workspace'] + '/variant/{sample}.plots.R'
+    input:
+        config['workspace'] + '/mapped/{sample}_raw.vcf',     
+    log:
+        config['workspace'] + '/logs/{sample}_variantrecal.log'
+    params:
+        ref=config['ref']
+    shell:
+        '{params.GATK} --java-options {params.extra} VariantRecalibrator '
+        '-R {params.ref} --input {input} '
+        '-O {output.table} ' 
+        '--tranches-file {output.tranches} --rscript-file {output.rscript} '
+        '--resource:hapmap,known=false,training=true,truth=true,prior=15.0 hapmap_3.3.hg38.vcf.gz '
+        '--resource:omni,known=false,training=true,truth=false,prior=12.0 1000G_omni2.5.hg38.vcf.gz '
+        '--resource:1000G,known=false,training=true,truth=false,prior=10.0 1000G_phase1.snps.high_confidence.hg38.vcf.gz '
+        '--resource:dbsnp,known=true,training=false,truth=false,prior=2.0 Homo_sapiens_assembly38.dbsnp138.vcf '
+        '-an QD -an MQ -an MQRankSum -an ReadPosRankSum -an FS -an SOR '
+ 
+rule vqsr:
+    output:
+        config['workspace'] + '/mapped/{sample}_VQSR.vcf'
+    input:
+        raw=config['workspace'] + '/mapped/{sample}_raw.vcf',
+        table=config['workspace'] + '/variant/{sample}.recal',
+        tranches=config['workspace'] + '/variant/{sample}.tranches'
+    log:
+        config['workspace'] + '/logs/{sample}_vqsr.log'
+    params:
+        ref=config['ref']
+    shell:
+        '{params.GATK} --java-options {params.extra} ApplyVQSR '
+        '-R {params.ref} -V {input.raw} '
+        '--tranches-file {input.tranches} '
+        '--recal-file {input.table} '
+        '-O {output} --truth-sensitivity-filter-level 99.0'
+        '-mode SNP '
