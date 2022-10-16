@@ -131,8 +131,7 @@ rule call:
         extra=r' "-Xmx2G -Djava.io.tmpdir=./" ',
         GATK=config['GATK'],
         ref=config['ref'],
-        snp=config['snp']
     shell:
         '{params.GATK} --java-options {params.extra} HaplotypeCaller '
         '-R {params.ref} --input {input} '
-        '--dbsnp {params.snp} -O {output}'
+        '-O {output}'
