@@ -1,5 +1,5 @@
-# whole_exome_squence_snakemake
-
+# Whole Exome Squence Snakemake
+Germline Single-Sample Pipeline
 ## Conda Enviornment
 ```
 conda install -c bioconda -c conda-forge bowtie sra-tools samtools bcftools vcftools snpeff fastp bowtie2 bwa bowtie bedtools snakemake
