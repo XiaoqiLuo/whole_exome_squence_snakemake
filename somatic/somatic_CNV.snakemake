@@ -4,7 +4,6 @@ normal = config['group']['normal'].split(',')
 tumor = config['group']['tumor'].split(',')
 rule all:
 	input:
-		#expand(config['OutDir'] + "/cnv/{sample}.pileup",sample=SRR)
 		expand(config['OutDir'] + '/cnv/{tumor}.cnv',tumor=tumor)
 		
 
