@@ -48,3 +48,4 @@ snakemake -s somatic_SNV_Indel.snakemake \
 --configfile somatic_SNV_Indel.yaml -j 12 -p
 ```
 
+This pipeline is in the process of being updated.......
