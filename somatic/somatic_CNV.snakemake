@@ -97,6 +97,6 @@ rule call:
 		out=config['OutDir']
 	shell:
 		'''
-		samtools mpileup -q 1 -f {params.ref} {input} {params.out}/gatk/bqsr/{params.normal}_bqsr.bam | varscan copynumber prefix --mpileup 1 {output.copynumber_orig} 
+		samtools mpileup -q 1 -f {params.ref} {params.out}/gatk/bqsr/{params.normal}_bqsr.bam {input} | varscan copynumber prefix --mpileup 1 {output.copynumber_orig} 
 		varscan copyCaller {output.copynumber_orig} --output-file {output.copynumber}
 		'''
