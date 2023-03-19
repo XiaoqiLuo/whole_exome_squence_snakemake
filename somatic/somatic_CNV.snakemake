@@ -1,0 +1,102 @@
+# snakemake -s somatic_CNV.snakemake --configfile somatic_CNV.yaml -j 12 -p
+SRR = config['Sample'].split(' ')
+normal = config['group']['normal'].split(',')
+tumor = config['group']['tumor'].split(',')
+rule all:
+	input:
+		#expand(config['OutDir'] + "/cnv/{sample}.pileup",sample=SRR)
+		expand(config['OutDir'] + '/cnv/{tumor}.cnv',tumor=tumor)
+		
+
+rule quality:
+	output:
+		fq1=config['OutDir'] + '/qc/{sample}_1_trim.fastq.gz',
+		fq2=config['OutDir'] + '/qc/{sample}_2_trim.fastq.gz',
+		json=config['OutDir'] + '/qc/{sample}_fastp.json',
+		html=config['OutDir'] + '/qc/{sample}_fastp.html'
+	input:
+		fq1=config['RawData'] + '/{sample}_1.fastq.gz',
+		fq2=config['RawData'] + '/{sample}_2.fastq.gz'
+	log:
+		config['OutDir'] + '/qc/logs/{sample}_trim.log'
+	shell:
+		'fastp -i {input.fq1} -I {input.fq2} '
+		'-o {output.fq1} -O {output.fq2} '
+		'-g -q 5 -u 50 -n 15 '
+		'-j {output.json} -h {output.html} 2>{log}'
+
+rule mapping:
+	output:
+		bam = config['OutDir'] + "/alignment/{sample}.bam"
+	input:
+		fq1=config['OutDir'] + '/qc/{sample}_1_trim.fastq.gz',
+		fq2=config['OutDir'] + '/qc/{sample}_2_trim.fastq.gz'
+	log:
+		config['OutDir'] + '/alignment/logs/{sample}_bwa_mem.log'
+	params:
+		index=config['genomes'] + 'Homo_sapiens.fa',  
+		extra=r"-R '@RG\tID:{sample}\tPL:illumina\tLB:{sample}\tSM:{sample}'", #@RG\tID:lane1\tPL:illumina\tLB:WGS\tSM:Illumina
+	shell:
+		'''
+        bwa mem {params.extra} {params.index} -t 15 {input.fq1} {input.fq2} | samtools sort -o {output.bam} -
+        ''' 
+
+rule stat:
+	output:
+		config['OutDir'] + "/alignment/{sample}.stat"
+	input:
+		config['OutDir'] + "/alignment/{sample}.bam"
+	log:
+		config['OutDir'] + '/alignment/logs/{sample}_stat.log'
+	shell:
+		'''
+        samtools flagstat {input} > {output}
+        '''
+
+rule markdup:
+	output:
+		bam=config['OutDir'] + '/gatk/duplicate_remove/{sample}_marked.bam',
+		metrics=config['OutDir'] + '/gatk/duplicate_remove/{sample}_marked.metrics.txt'
+	input:
+		config['OutDir'] + '/alignment/{sample}.bam'
+	log:
+		config['OutDir'] + '/gatk/duplicate_remove/logs/{sample}_markdup.log'
+	params:
+		extra=r' "-Xmx12G " ',
+		GATK=config['GATK'] 
+	shell:
+		'''
+        {params.GATK} --java-options {params.extra} MarkDuplicates -I {input} -O {output.bam} -M {output.metrics} --REMOVE_SEQUENCING_DUPLICATES true
+        '''
+
+rule fixmat:
+    output:
+        config['OutDir'] + '/gatk/duplicate_remove/{sample}_marked_fixed.bam'
+    input:
+        config['OutDir'] + '/gatk/duplicate_remove/{sample}_marked.bam'
+    log:
+        config['OutDir'] + '/gatk/duplicate_remove/logs/{sample}_fix.log'
+    params:
+        extra=r' "-Xmx12G " ',
+        GATK=config['GATK'] 
+    shell:
+        '''
+        {params.GATK} --java-options {params.extra} FixMateInformation -I {input} -O {output} -SO coordinate
+        samtools index {output}
+        '''
+
+rule call:
+	output:
+		copynumber_orig = config['OutDir'] + '/cnv/{tumor}.copynumber',
+		copynumber = config['OutDir'] + '/cnv/{tumor}.cnv',
+	input:
+		config['OutDir'] + '/gatk/bqsr/{tumor}_bqsr.bam',
+	params:
+		ref=config['ref'],
+		normal=lambda wildcards: config['pair'][wildcards.tumor],
+		out=config['OutDir']
+	shell:
+		'''
+		samtools mpileup -q 1 -f {params.ref} {input} {params.out}/gatk/bqsr/{params.normal}_bqsr.bam | varscan copynumber prefix --mpileup 1 {output.copynumber_orig} 
+		varscan copyCaller {output.copynumber_orig} --output-file {output.copynumber}
+		'''
