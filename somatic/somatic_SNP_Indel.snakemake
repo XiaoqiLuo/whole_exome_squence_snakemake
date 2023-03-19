@@ -1,0 +1,191 @@
+# snakemake -s somatic_SNP_Indel.snakemake --configfile somatic_SNP_Indel.yaml -j 12 -p
+SRR = config['Sample'].split(' ')
+normal = config['group']['normal'].split(',')
+tumor = config['group']['tumor'].split(',')
+
+rule all:
+    input:
+        #expand(config['OutDir'] + '/gatk/call/{normal}_for_pon.vcf.gz',normal = normal)
+        #config['OutDir'] + '/gatk/call/pon.vcf.gz'
+        #expand(config['OutDir'] + '/gatk/call/{tumor}_somatic.vcf.gz',tumor=tumor)
+        expand(config['OutDir'] + '/gatk/filterVariant/{tumor}_pileups.table',tumor=tumor)
+
+rule quality:
+	output:
+		fq1=config['OutDir'] + '/qc/{sample}_1_trim.fastq.gz',
+		fq2=config['OutDir'] + '/qc/{sample}_2_trim.fastq.gz',
+		json=config['OutDir'] + '/qc/{sample}_fastp.json',
+		html=config['OutDir'] + '/qc/{sample}_fastp.html'
+	input:
+		fq1=config['RawData'] + '/{sample}_1.fastq.gz',
+		fq2=config['RawData'] + '/{sample}_2.fastq.gz'
+	log:
+		config['OutDir'] + '/qc/logs/{sample}_trim.log'
+	shell:
+		'fastp -i {input.fq1} -I {input.fq2} '
+		'-o {output.fq1} -O {output.fq2} '
+		'-g -q 5 -u 50 -n 15 '
+		'-j {output.json} -h {output.html} 2>{log}'
+
+rule mapping:
+	output:
+		bam = config['OutDir'] + "/alignment/{sample}.bam"
+	input:
+		fq1=config['OutDir'] + '/qc/{sample}_1_trim.fastq.gz',
+		fq2=config['OutDir'] + '/qc/{sample}_2_trim.fastq.gz'
+	log:
+		config['OutDir'] + '/alignment/logs/{sample}_bwa_mem.log'
+	params:
+		index=config['genomes'] + 'Homo_sapiens.fa',  
+		extra=r"-R '@RG\tID:{sample}\tPL:illumina\tLB:{sample}\tSM:{sample}'", #@RG\tID:lane1\tPL:illumina\tLB:WGS\tSM:Illumina
+	shell:
+		'''
+        bwa mem {params.extra} {params.index} -t 15 {input.fq1} {input.fq2} | samtools sort -o {output.bam} -
+        ''' 
+
+rule stat:
+	output:
+		config['OutDir'] + "/alignment/{sample}.stat"
+	input:
+		config['OutDir'] + "/alignment/{sample}.bam"
+	log:
+		config['OutDir'] + '/alignment/logs/{sample}_stat.log'
+	shell:
+		'''
+        samtools flagstat {input} > {output}
+        '''
+
+rule markdup:
+	output:
+		bam=config['OutDir'] + '/gatk/duplicate_remove/{sample}_marked.bam',
+		metrics=config['OutDir'] + '/gatk/duplicate_remove/{sample}_marked.metrics.txt'
+	input:
+		config['OutDir'] + '/alignment/{sample}.bam'
+	log:
+		config['OutDir'] + '/gatk/duplicate_remove/logs/{sample}_markdup.log'
+	params:
+		extra=r' "-Xmx12G " ',
+		GATK=config['GATK'] 
+	shell:
+		'''
+        {params.GATK} --java-options {params.extra} MarkDuplicates -I {input} -O {output.bam} -M {output.metrics} --REMOVE_SEQUENCING_DUPLICATES true
+        '''
+
+rule fixmat:
+    output:
+        config['OutDir'] + '/gatk/duplicate_remove/{sample}_marked_fixed.bam'
+    input:
+        config['OutDir'] + '/gatk/duplicate_remove/{sample}_marked.bam'
+    log:
+        config['OutDir'] + '/gatk/duplicate_remove/logs/{sample}_fix.log'
+    params:
+        extra=r' "-Xmx12G " ',
+        GATK=config['GATK'] 
+    shell:
+        '''
+        {params.GATK} --java-options {params.extra} FixMateInformation -I {input} -O {output} -SO coordinate
+        samtools index {output}
+
+        '''
+
+rule baserecal:
+    output:
+        config['OutDir'] + '/gatk/bqsr/{sample}_recal.table'
+    input:
+        config['OutDir'] + '/gatk/duplicate_remove/{sample}_marked_fixed.bam'
+    log:
+        config['OutDir'] + '/gatk/bqsr/logs/{sample}_baserecal.log'
+    params:
+        extra=r' "-Xmx12G " ',
+        GATK=config['GATK'],
+        ref=config['ref'], # samtools faidx  Homo_sapiens.fa; gatk CreateSequenceDictionary --REFERENCE Homo_sapiens.fa
+        snp=config['snp'],
+        indel=config['indel']
+    shell:
+        '{params.GATK} --java-options {params.extra} BaseRecalibrator '  # java8
+        '-R {params.ref} --input {input} '
+        '--known-sites {params.snp} --known-sites {params.indel} '
+        '-O {output} '
+
+rule bqsr:
+    output:
+        config['OutDir'] + '/gatk/bqsr/{sample}_bqsr.bam'
+    input:
+        bam=config['OutDir'] + '/gatk/duplicate_remove/{sample}_marked_fixed.bam',
+        table=config['OutDir'] + '/gatk/bqsr/{sample}_recal.table'
+    log:
+        config['OutDir'] + '/gatk/bqsr/logs/{sample}_bqsr.log'
+    params:
+        extra=r' "-Xmx12G " ',
+        GATK=config['GATK'],
+        ref=config['ref']
+    shell:
+        '{params.GATK} --java-options {params.extra} ApplyBQSR '
+        '-R {params.ref} --input {input.bam} '
+        '-bqsr {input.table} -O {output}'
+
+rule generatePON:
+    output:
+        pon=config['OutDir'] + '/gatk/call/{normal}_for_pon.vcf.gz',
+    input:
+        Nor=config['OutDir'] + '/gatk/bqsr/{normal}_bqsr.bam',
+    params:
+        extra=r' "-Xmx12G " ',
+        GATK=config['GATK'],
+        ref=config['ref'],
+        afonly=config['afonly'],
+    shell:
+        '''
+        {params.GATK} --java-options {params.extra} Mutect2 -R {params.ref} -I {input.Nor} -tumor {wildcards.normal} \
+        --germline-resource {params.afonly} -O {output.pon}
+        '''
+
+rule combinePON:
+    output:
+        arg_list=config['OutDir'] + '/gatk/call/normals_for_pon_vcf.args',
+        vcf=config['OutDir'] + '/gatk/call/pon.vcf.gz',
+    input:
+        expand(config['OutDir'] + '/gatk/call/{normal}_for_pon.vcf.gz',normal=normal)
+    params:
+        path=config['OutDir'] + '/gatk/call/',
+        GATK=config['GATK'],
+    shell:
+        '''
+        ls {params.path} | grep gz | grep -v tbi > {output.arg_list}
+        {params.GATK} CreateSomaticPanelOfNormals -vcfs {output.arg_list} -O {output.vcf}
+        '''
+        
+rule call:
+    output:
+        config['OutDir'] + '/gatk/call/{tumor}_somatic.vcf.gz'
+    input:
+        pon=config['OutDir'] + '/gatk/call/pon.vcf.gz', 
+        tumor=config['OutDir'] + '/gatk/bqsr/{tumor}_bqsr.bam',
+    params:
+        extra=r' "-Xmx2G " ',
+        GATK=config['GATK'],
+        ref=config['ref'],        
+        afonly=config['afonly'], 
+        normal=lambda wildcards: config['pair'][wildcards.tumor] ,
+        out=config['OutDir']
+    shell:
+        '''  
+        {params.GATK} Mutect2 -R {params.ref} -I {input.tumor} -I {params.out}/gatk/bqsr/{params.normal}_bqsr.bam -normal {params.normal} -tumor {wildcards.tumor}  --germline-resource {params.afonly}  --panel-of-normals {input.pon} -O {output}
+        '''
+
+rule CalculateContamination:
+    output:
+        config['OutDir'] + '/gatk/filterVariant/{tumor}_pileups.table'
+    input:
+        config['OutDir'] + '/gatk/bqsr/{tumor}_bqsr.bam'
+    params:
+        GATK=config['GATK'],
+        afonly=config['afonly'],
+        out=config['OutDir'],
+        ref=config['ref'],   
+    shell:
+        '''
+        {params.GATK} GetPileupSummaries -I {params.out}/gatk/bqsr/{wildcards.tumor}_bqsr.bam -V {params.afonly} -L {params.afonly} -O {output}
+        # {params.GATK} CalculateContamination -I tumor-pileups.table -matched normal-pileups.table -O contamination.table
+        # {params.GATK} FilterMutectCalls -R {input.ref} -V {wildcards.tumor}_somatic.vcf.gz --contamination-table contamination.table --tumor-segmentation segments.tsv -O filtered.vcf.gz
+        '''
