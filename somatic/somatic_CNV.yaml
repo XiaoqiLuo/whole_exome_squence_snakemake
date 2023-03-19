@@ -1,0 +1,16 @@
+RawData: ./luoxiaoqi/sequencing/rawdata
+genomes: ./luoxiaoqi/sequencing/genome/
+ref: ./luoxiaoqi/sequencing/genome/Homo_sapiens.fa
+snp: ./luoxiaoqi/sequencing/db/dbsnp_146.hg38.vcf.gz
+indel: ./luoxiaoqi/sequencing/db/Mills_and_1000G_gold_standard.indels.hg38.vcf.gz
+gtfbed: ./luoxiaoqi/sequencing/db/GTFBed
+Sample: SRR15017120 SRR15017121 SRR15017122 SRR15017123
+pair: 
+  SRR15017121: SRR15017120
+  SRR15017123: SRR15017122
+group:
+  normal: SRR15017120,SRR15017122
+  tumor: SRR15017121,SRR15017123
+OutDir: ./luoxiaoqi/sequencing/output
+GATK: ./luoxiaoqi/sequencing/tool/gatk-4.0.6.0/gatk
+afonly:  ./luoxiaoqi/sequencing/db/af-only-gnomad.hg38.vcf.gz
