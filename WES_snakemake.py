@@ -14,7 +14,7 @@ files=os.listdir(config['workspace']+'/rawfastq/')
 SRR = []
 for f in files[0:3:2]:
     SRR.append(re.split(r'_', f)[0])
-#print(SRR)
+
 rule all:
     input:
         expand(
