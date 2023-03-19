@@ -5,9 +5,6 @@ tumor = config['group']['tumor'].split(',')
 
 rule all:
     input:
-        #expand(config['OutDir'] + '/gatk/call/{normal}_for_pon.vcf.gz',normal = normal)
-        #config['OutDir'] + '/gatk/call/pon.vcf.gz'
-        #expand(config['OutDir'] + '/gatk/call/{tumor}_somatic.vcf.gz',tumor=tumor)
         expand(config['OutDir'] + '/gatk/filterVariant/{tumor}_pileups.table',tumor=tumor)
 
 rule quality:
