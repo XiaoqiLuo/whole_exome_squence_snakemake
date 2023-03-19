@@ -33,15 +33,7 @@ wget -c ftp://gsapubftp-anonymous@ftp.broadinstitute.org/bundle/hg38/Mills_and_1
 ```
 
 # How To Execute
-## File Tree (fastq files are saved in rawfastq file)
->workspace
->>WES_snakemake.py<br>
->>rawfastq<br>
->>>SRR13018671_1.fastq.gz<br>
->>>SRR13018671_2.fastq.gz<br>
->>>SRR10720394_1.fastq.gz<br>
->>>SRR10720394_2.fastq.gz<br>
-
+Germline:
 ```
 snakemake -s WES_snakemake.py -p -j 1 --config workspace=path-to-workspace \
 genomes=path-to-bwa-index GATK=path-to-gatk \
@@ -49,14 +41,10 @@ ref=path-to-Homo_sapiens_assembly38.fasta \
 snp=path-to-dbsnp_146.hg38.vcf.gz \
 indel=path-to-path-to-Mills_and_1000G_gold_standard.indels.hg38.vcf.gz
 ```
-# example
+
+Somatic:
 ```
-genomes=/mnt/d/WES/GATK/hg38/bwa_index/ GATK=/mnt/d/WES/GATK/gatk-4.1.7.0/gatk \
-ref=/mnt/d/WES/GATK/hg38/Homo_sapiens_assembly38.fasta \
-snp=/mnt/d/WES/GATK/hg38/dbsnp_146.hg38.vcf.gz \
-indel=/mnt/d/WES/GATK/hg38/Mills_and_1000G_gold_standard.indels.hg38.vcf.gz
+snakemake -s somatic_SNV_Indel.snakemake \
+--configfile somatic_SNV_Indel.yaml -j 12 -p
 ```
-# result
-The pipeline generates 20 files for one sample, which ***.vcf*** files is the result file needed for downstream analysis.<br>
-File tree shown below:<br>
-![image](https://github.com/XiaoqiLuo/whole_exome_squence_snakemake/blob/main/WES-workspace.png)
+
